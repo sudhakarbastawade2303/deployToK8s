@@ -1,0 +1,32 @@
+pipeline{
+    agent any
+    tools {
+        maven 'M2_HOME' 
+    }
+    environment {
+        DOCKERHUB_CREDENTIALS=credentials('dockerhub_pw')
+    }
+    stages{
+        stage('Build Maven'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/sudhakarbastawade2303/deployToK8s.git']]])
+                sh 'mvn clean install'
+            }
+        }
+        stage('Build docker image'){
+            steps{
+                script{
+                    sh 'docker build -t sudhakarbastawade/devops-integration .'
+                }
+            }
+        }
+        stage('Push image to Hub'){
+            steps{
+                script{
+                   sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USER --password-stdin'
+                   sh 'docker push sudhakarbastawade/devops-integration'
+                }   
+            }
+        }
+    }
+}
